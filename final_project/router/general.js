@@ -78,45 +78,101 @@ public_users.get("/review/:isbn", function (req, res) {
 });
 
 // Task 10: Get all books using async-await with Axios
-public_users.get("/await-books", async (req, res) => {
+public_users.get("/books", async function (req, res) {
   try {
-    const response = await axios.get("http://localhost:5000/");
-    res.status(200).send(JSON.stringify(response.data, null, 4));
+    const data = await new Promise((resolve) => {
+      let allBooks = Object.keys(books).map((isbn) => ({
+        isbn: isbn,
+        title: books[isbn]["title"],
+        author: books[isbn]["author"],
+        reviews: books[isbn]["reviews"],
+      }));
+      resolve(allBooks);
+    });
+
+    res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
 // Task 11: Get book by ISBN using async-await with Axios
-public_users.get("/await-isbn/:isbn", async (req, res) => {
-  const { isbn } = req.params;
+public_users.get("/books/isbn/:isbn", async function (req, res) {
   try {
-    const response = await axios.get(`http://localhost:5000/isbn/${isbn}`);
-    res.status(200).send(JSON.stringify(response.data, null, 4));
+    const data = await new Promise((resolve, reject) => {
+      let isbn = req.params.isbn;
+      if (books[isbn]) {
+        resolve(books[isbn]);
+      } else {
+        reject("Invalid ISBN");
+      }
+    });
+
+    res.status(200).json(data);
   } catch (error) {
-    res.status(404).json({ message: "Book not found" });
+    res.status(404).json({ message: error });
   }
 });
 
 // Task 12: Get books by author using async-await with Axios
-public_users.get("/await-author/:author", async (req, res) => {
-  const { author } = req.params;
+public_users.get("/books/author/:author", async function (req, res) {
   try {
-    const response = await axios.get(`http://localhost:5000/author/${author}`);
-    res.status(200).send(JSON.stringify(response.data, null, 4));
+    const data = await new Promise((resolve) => {
+      let booksbyauthor = [];
+      let isbns = Object.keys(books);
+
+      isbns.forEach((isbn) => {
+        if (books[isbn]["author"] === req.params.author) {
+          booksbyauthor.push({
+            isbn: isbn,
+            title: books[isbn]["title"],
+            reviews: books[isbn]["reviews"],
+          });
+        }
+      });
+
+      resolve(booksbyauthor);
+    });
+
+    if (data.length > 0) {
+      res.status(200).json(data);
+    } else {
+      res.status(404).json({ message: "No books found for the given author" });
+    }
   } catch (error) {
-    res.status(404).json({ message: "No books found for the author" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
 // Task 13: Get books by title using async-await with Axios
-public_users.get("/await-title/:title", async (req, res) => {
-  const { title } = req.params;
+public_users.get("/books/title/:title", async function (req, res) {
   try {
-    const response = await axios.get(`http://localhost:5000/title/${title}`);
-    res.status(200).send(JSON.stringify(response.data, null, 4));
+    const data = await new Promise((resolve) => {
+      let booksbytitle = [];
+      let isbns = Object.keys(books);
+
+      isbns.forEach((isbn) => {
+        if (
+          books[isbn]["title"].toLowerCase() === req.params.title.toLowerCase()
+        ) {
+          booksbytitle.push({
+            isbn: isbn,
+            author: books[isbn]["author"],
+            reviews: books[isbn]["reviews"],
+          });
+        }
+      });
+
+      resolve(booksbytitle);
+    });
+
+    if (data.length > 0) {
+      res.status(200).json(data);
+    } else {
+      res.status(404).json({ message: "The mentioned title does not exist" });
+    }
   } catch (error) {
-    res.status(404).json({ message: "No books found with the title" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
